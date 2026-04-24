@@ -53,10 +53,17 @@ func benchQuery(b *testing.B, payloadSize int, senders int) {
 		payload[i] = byte(i & 0xFF)
 	}
 
+	// Arena must hold at least senders*8 concurrent payloads; the default
+	// (req_cap*256 = 64 KB) is too small for large messages.
+	arenaHint := uint64(payloadSize+128) * uint64(senders) * 8
+	if arenaHint < 65536 {
+		arenaHint = 65536
+	}
 	opts := Options{
 		ReqCap:      256,
 		RespSlots:   256,
 		RespDataMax: uint32(payloadSize + 64),
+		ReqArenaCap: uint32(arenaHint),
 	}
 	cli, cleanup := benchEchoSetup(b, opts, senders)
 	defer cleanup()
@@ -85,11 +92,13 @@ func benchQuery(b *testing.B, payloadSize int, senders int) {
 	})
 }
 
-func BenchmarkQuery1KB_1(b *testing.B)  { benchQuery(b, 1024, 1) }
-func BenchmarkQuery1KB_4(b *testing.B)  { benchQuery(b, 1024, 4) }
-func BenchmarkQuery1KB_8(b *testing.B)  { benchQuery(b, 1024, 8) }
-func BenchmarkQuery64KB_1(b *testing.B) { benchQuery(b, 64*1024, 1) }
-func BenchmarkQuery64KB_4(b *testing.B) { benchQuery(b, 64*1024, 4) }
+func BenchmarkQuery1KB_1(b *testing.B)   { benchQuery(b, 1024, 1) }
+func BenchmarkQuery1KB_4(b *testing.B)   { benchQuery(b, 1024, 4) }
+func BenchmarkQuery1KB_8(b *testing.B)   { benchQuery(b, 1024, 8) }
+func BenchmarkQuery64KB_1(b *testing.B)  { benchQuery(b, 64*1024, 1) }
+func BenchmarkQuery64KB_4(b *testing.B)  { benchQuery(b, 64*1024, 4) }
+func BenchmarkQuery512KB_1(b *testing.B) { benchQuery(b, 512*1024, 1) }
+func BenchmarkQuery512KB_4(b *testing.B) { benchQuery(b, 512*1024, 4) }
 
 // BenchmarkQueryThroughput measures aggregate throughput across N parallel
 // clients all sending to the same server.

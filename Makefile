@@ -1,6 +1,6 @@
 GO ?= go
 
-.PHONY: update-header generate test bench
+.PHONY: update-header generate test bench interop
 
 update-header:
 	curl -fsSL https://raw.githubusercontent.com/vividsnow/perl5-data-reqrep-shared/master/reqrep.h \
@@ -15,3 +15,6 @@ test:
 
 bench:
 	$(GO) test -bench=. -benchmem ./...
+
+interop:
+	$(GO) test -v -race -tags interop ./...
